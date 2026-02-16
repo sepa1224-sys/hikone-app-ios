@@ -1,0 +1,1 @@
+export const getUserStamps = async () => []; export const getMyActiveStampCards = async () => []; export const getAvailableStampCards = async () => []; export const registerStampCard = async () => ({ success: true }); export const grantStamp = async () => ({ success: true }); export const getStampCard = async () => null; export const getStampShops = async () => [];

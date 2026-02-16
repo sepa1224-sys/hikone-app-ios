@@ -1,0 +1,14 @@
+import type { CapacitorConfig } from '@capacitor/cli';
+
+const config: CapacitorConfig = {
+  appId: 'com.regionalportal.app',
+  appName: 'RegionalPortal',
+  webDir: 'out',
+  // ★ここから下を追加
+  server: {
+    url: 'http://192.168.178.46:3000',
+    cleartext: true
+  }
+};
+
+export default config;

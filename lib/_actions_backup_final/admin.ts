@@ -1,0 +1,1 @@
+export const adminLogin = async () => ({ success: true });

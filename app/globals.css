@@ -1,0 +1,142 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+  }
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--background-end-rgb))
+    )
+    rgb(var(--background-start-rgb));
+  padding-bottom: 80px; /* 下部ナビゲーションのスペース */
+}
+
+/* モバイルファーストのベーススタイル */
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* 全ての入力欄を黒文字に統一（ダークモード対策） */
+  input,
+  textarea,
+  select {
+    color: #111827 !important; /* text-gray-900 */
+    background-color: #ffffff !important;
+    caret-color: #111827; /* カーソル色 */
+  }
+  
+  input::placeholder,
+  textarea::placeholder {
+    color: #9ca3af !important; /* text-gray-400 */
+  }
+  
+  /* フォーカス時のスタイル */
+  input:focus,
+  textarea:focus,
+  select:focus {
+    color: #111827 !important;
+    background-color: #ffffff !important;
+  }
+  
+  /* 背景色が指定されている入力欄用（透明背景対策） */
+  input[class*="bg-"],
+  textarea[class*="bg-"],
+  select[class*="bg-"] {
+    color: #111827 !important;
+  }
+}
+
+/* ライトモード固定（ダークモード無効化） */
+@media (prefers-color-scheme: dark) {
+  input,
+  textarea,
+  select {
+    color: #111827 !important;
+    background-color: #ffffff !important;
+  }
+  
+  input::placeholder,
+  textarea::placeholder {
+    color: #9ca3af !important;
+  }
+}
+
+/* Leaflet マーカーのスタイル */
+.custom-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* チャット画面のアニメーション */
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-10px); }
+  75% { transform: translateX(10px); }
+}
+
+@keyframes zoom-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-in.shake {
+  animation: shake 0.3s ease-out;
+}
+
+.animate-in.zoom-in {
+  animation: zoom-in 0.3s ease-out;
+}
+
+/* セーフエリア対応のユーティリティ */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}

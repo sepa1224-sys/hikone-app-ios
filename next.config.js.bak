@@ -1,0 +1,10 @@
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  output: 'export', // モバイルアプリにはこれが必須
+  images: {
+    unoptimized: true, // 画像表示のエラーを防ぐ
+  },
+  // experimental.serverActions は削除してください（エラーの原因）
+};
+
+export default nextConfig;

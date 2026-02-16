@@ -1,0 +1,17 @@
+ALTER TABLE shops 
+ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+
+CREATE OR REPLACE FUNCTION handle_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS on_shops_updated ON shops;
+
+CREATE TRIGGER on_shops_updated
+  BEFORE UPDATE ON shops
+  FOR EACH ROW
+  EXECUTE PROCEDURE handle_updated_at();
