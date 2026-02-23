@@ -7,6 +7,8 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/components/AuthProvider'
 import { Capacitor } from '@capacitor/core'
+import { FirebaseAuthentication } from '@capacitor-firebase/authentication'
+import '@/lib/firebase'
 
 // Googleアイコン（SVG）
 const GoogleIcon = () => (
@@ -47,9 +49,14 @@ const LineIcon = () => (
 
 export default function LoginPage() {
   const router = useRouter()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
   
   // AuthProvider から認証状態を取得
   const { session, loading: authLoading, loginPhase, lastDeepLinkUrl, setLoginPhase } = useAuth()
+  if (!mounted) return null
   
   const [isLogin, setIsLogin] = useState(true) // true: ログイン, false: 新規登録
   const [email, setEmail] = useState('')
@@ -60,108 +67,80 @@ export default function LoginPage() {
   const [lineLoading, setLineLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [firebaseUid, setFirebaseUid] = useState<string | null>(null)
+  const [forceEnabled, setForceEnabled] = useState(false)
+  const isWeb = !Capacitor.isNativePlatform()
+  const hasUser = !!session?.user || !!firebaseUid
+  
+  
+  
+  
   
   // 既にログイン済みの場合はプロフィールページへリダイレクト
-  useEffect(() => {
-    // console.log('🔑 [Login] 認証状態確認:', { authLoading, hasSession: !!session })
-    
-    if (!authLoading && session) {
-      console.log('🔑 [Login] 既にログイン済み → プロフィールへリダイレクト')
-      window.location.href = '/profile'
-    }
-  }, [authLoading, session, router])
+  
 
   // メール/パスワードでのログイン 登録
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
     setError('')
     setSuccess('')
-
+    setLoading(true)
     try {
       if (isLogin) {
-        console.log('🔑 [Login] メールログイン実行中...')
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        })
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password })
         if (error) throw error
-        console.log('🔑 [Login] ログイン成功:', data.session?.user?.email)
-        setSuccess('ログインしました！')
-        
-        // Shop Owner Check & Redirect
-        let redirectUrl = '/'
-        if (data.user) {
-          const { data: shop } = await supabase
-            .from('shops')
-            .select('id')
-            .eq('owner_id', data.user.id)
-            .single()
-          
-          if (shop) {
-            redirectUrl = '/shop/dashboard'
-          }
-        }
-
-        // ログイン成功後、キャッシュをクリアして遷移
-        router.refresh()
-        router.push(redirectUrl)
+        setSuccess('ログインしました')
       } else {
-        console.log('🔑 [Login] 新規登録実行中...')
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-        })
+        const { data, error } = await supabase.auth.signUp({ email, password })
         if (error) throw error
-        setSuccess('確認メールを送信しました。メールをご確認ください。')
+        setSuccess('登録用メールを送信しました')
       }
+      try {
+        router.push('/profile')
+      } catch {}
     } catch (err: any) {
-      console.error('🔑 [Login] エラー:', err.message)
-      setError(err.message || 'エラーが発生しました')
+      setError(err?.message || '認証に失敗しました')
     } finally {
       setLoading(false)
     }
   }
 
-  // Googleでサインイン（Supabase OAuth）
+  // Googleでサインイン（ネイティブの小窓→IDトークン→Supabase）
   const handleGoogleSignIn = async (e: React.MouseEvent) => {
     e.preventDefault()
-    setGoogleLoading(true)
     setError('')
-    setLoginPhase('PHASE 1: Starting Google Sign-In (Supabase OAuth)')
-
+    setSuccess('')
+    setGoogleLoading(true)
     try {
-      const redirectTo = 'com.googleusercontent.apps.139491332086-9bu2cvqkq0nlm7iregal92jq0oe19grv:/oauth2redirect/google'
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo,
-          skipBrowserRedirect: true,
-          flowType: 'implicit',
-          queryParams: {
-            prompt: 'consent',
-            access_type: 'offline',
-          },
-        },
-      })
-      if (error) {
-        try { window.alert(String(error.message || error)) } catch {}
-        throw error
-      }
-      setLoginPhase('PHASE 2: Waiting for DeepLink')
-      const cap: any = (globalThis as any).Capacitor
-      const browser = cap?.Browser
-      if (data?.url) {
-        if (Capacitor.isNativePlatform() && browser?.open) {
-          try { await browser.open({ url: data.url }) } catch (e: any) { try { window.alert('Browser Open Error: ' + (e?.message || 'Unknown')) } catch {} }
-        } else {
+      if (isWeb) {
+        const redirectTo = `${location.origin}/auth/callback`
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: { redirectTo }
+        })
+        if (error) throw error
+        if (data?.url) {
           window.location.href = data.url
         }
+      } else {
+        const res = await FirebaseAuthentication.signInWithGoogle()
+        const tokenRes = await FirebaseAuthentication.getIdToken({ forceRefresh: true })
+        const token = (tokenRes as any)?.token || (tokenRes as any)?.idToken
+        setFirebaseUid((res as any)?.user?.uid || null)
+        if (!token) throw new Error('IDトークンの取得に失敗しました')
+        const { data, error } = await supabase.auth.signInWithIdToken({
+          provider: 'google',
+          token
+        })
+        if (error) throw error
+        setSuccess('ログインしました')
+        try {
+          router.push('/profile')
+        } catch {}
       }
     } catch (err: any) {
-      try { window.alert('Login Error: ' + (err?.message || String(err))) } catch {}
-      console.error('🔑 [Login] Googleログインエラー:', err?.message || err)
-      setError('Googleログインに失敗しました')
+      setError(err?.message || 'Google認証に失敗しました')
+    } finally {
       setGoogleLoading(false)
     }
   }
@@ -171,52 +150,47 @@ export default function LoginPage() {
   // LINEでサインイン（Supabase OAuth）
   const handleLineSignIn = async (e: React.MouseEvent) => {
     e.preventDefault()
-    setLineLoading(true)
     setError('')
-    setLoginPhase('PHASE 1: Starting OAuth')
-
+    setSuccess('')
+    setLineLoading(true)
     try {
-      console.log('🔑 [Login] LINEログイン(Supabase)実行中...')
-      const redirectTo = 'http://192.168.178.46:3000/auth/callback'
-      console.log('🔑 [Login] LINE OAuth redirectTo:', redirectTo)
+      const redirectTo = isWeb ? `${location.origin}/auth/callback` : 'com.regionalportal.app://auth-callback'
       const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'line',
-        options: {
-          redirectTo,
-          skipBrowserRedirect: true,
-          flowType: 'implicit',
-        },
+        provider: 'line' as any,
+        options: { redirectTo }
       })
-      console.log('🔑 [Login] LINE OAuth generated URL:', data?.url)
-      setLoginPhase('PHASE 2: Waiting for DeepLink')
-      if (data?.url) window.location.href = data.url
-      
-      if (error) {
-        try { window.alert(String(error)) } catch {}
-        throw error
+      if (error) throw error
+      if (data?.url) {
+        window.location.href = data.url
       }
     } catch (err: any) {
-      try { window.alert(String(err)) } catch {}
-      console.error('🔑 [Login] LINEログインエラー:', err?.message || err)
-      setError(err.message || 'LINEログインに失敗しました')
+      setError(err?.message || 'LINE認証に失敗しました')
+    } finally {
       setLineLoading(false)
     }
   }
   
-  // AuthProvider がまだローディング中の場合
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-orange-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin text-4xl mb-4">🔐</div>
-          <p className="font-black text-gray-400">認証状態を確認中...</p>
-        </div>
-      </div>
-    )
-  }
+  
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-orange-50 flex flex-col">
+      {forceEnabled && (
+        <div className="p-4">
+          <button
+            onClick={() => {
+              console.log('🔐 [Login] Firebase UID:', firebaseUid)
+              try {
+                router.push('/home')
+              } catch {
+                try { router.push('/') } catch {}
+              }
+            }}
+            className="w-full py-3 bg-yellow-100 text-yellow-800 font-bold rounded-xl border border-yellow-300 hover:bg-yellow-200 transition"
+          >
+            【開発用】ネイティブアプリ画面へ強制移動
+          </button>
+        </div>
+      )}
       {/* ヘッダー */}
       <div className="p-4">
         <Link href="/" prefetch={false} className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700">
@@ -224,6 +198,24 @@ export default function LoginPage() {
           <span className="text-sm font-bold">ホームに戻る</span>
         </Link>
       </div>
+      {isWeb && (
+        <div
+          style={{
+            background: '#007bff',
+            color: 'white',
+            padding: 20,
+            textAlign: 'center',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            border: '3px solid yellow',
+          }}
+          onClick={() => {
+            try { (window as any).location.href = 'hikoneapp://home' } catch {}
+          }}
+        >
+          【ここをタップしてアプリに戻る】
+        </div>
+      )}
 
       {/* メインコンテンツ */}
       <div className="flex-1 flex items-center justify-center px-6 pb-20">

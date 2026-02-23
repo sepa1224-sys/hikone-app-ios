@@ -37,8 +37,7 @@ export default function ShopClaimPage() {
       const res = await claimShop(user.id, code)
       if (res.success) {
         // 成功時の処理
-        // プロフィール情報が更新されているため、リロードを伴う遷移を行う
-        window.location.href = '/shop/dashboard'
+        router.push('/shop/dashboard')
       } else {
         setError(res.message || 'エラーが発生しました')
       }

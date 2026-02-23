@@ -4,18 +4,21 @@ import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Store, ArrowLeft } from 'lucide-react'
+import { useAuth } from '@/components/AuthProvider'
 
 export default function ShopStaffHeader() {
   const pathname = usePathname()
+  const normalizedPath = (pathname || '').replace(/\.html$/, '')
   const router = useRouter()
   const [isShopStaff, setIsShopStaff] = useState(false)
   const [loading, setLoading] = useState(true)
+  const { user, session } = useAuth()
 
   useEffect(() => {
     const checkRole = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession()
-        if (!session?.user) {
+        // 未ログイン時は問い合わせを行わない
+        if (!session?.user || !user?.id) {
           setLoading(false)
           return
         }
@@ -23,7 +26,7 @@ export default function ShopStaffHeader() {
         const { data: profile } = await supabase
           .from('profiles')
           .select('role')
-          .eq('id', session.user.id)
+          .eq('id', user.id)
           .maybeSingle()
 
         setIsShopStaff(profile?.role === 'shop')
@@ -34,11 +37,16 @@ export default function ShopStaffHeader() {
       }
     }
 
+    // /login ではチェック自体を行わない
+    if (normalizedPath === '/login') {
+      setLoading(false)
+      return
+    }
     checkRole()
-  }, [])
+  }, [pathname, user, session])
 
   // 店舗ページ(/shop/*)以外にいる場合のみ表示
-  const isGeneralPage = !pathname?.startsWith('/shop')
+  const isGeneralPage = !normalizedPath?.startsWith('/shop')
 
   if (loading || !isShopStaff || !isGeneralPage) return null
 

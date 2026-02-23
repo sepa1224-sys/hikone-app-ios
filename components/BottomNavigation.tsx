@@ -172,8 +172,7 @@ export default function BottomNavigation({ onNavigate }: BottomNavigationProps) 
       
       onNavigate?.()
       
-      // router.push の廃止: 強制的にリロードを伴う遷移を行う
-      window.location.href = '/login'
+      router.push('/login')
     } else {
       onNavigate?.()
     }

@@ -3,13 +3,13 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>139491332086-9bu2cvqkq0nlm7iregal92jq0oe19grv.apps.googleusercontent.com</string>
+	<string>121579951720-gqkrf4qdolaja8abngdtv6u39sh9g6s8.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.139491332086-9bu2cvqkq0nlm7iregal92jq0oe19grv</string>
+	<string>com.googleusercontent.apps.121579951720-gqkrf4qdolaja8abngdtv6u39sh9g6s8</string>
 	<key>API_KEY</key>
 	<string>AIzaSyDRcUaWrBSuLAydaUVg3Tr2WrEFcIZoRaM</string>
 	<key>GCM_SENDER_ID</key>
-	<string>139491332086</string>
+	<string>121579951720</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
@@ -19,16 +19,16 @@
 	<key>STORAGE_BUCKET</key>
 	<string>hikoneapp.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
-	<false></false>
+	<false/>
 	<key>IS_ANALYTICS_ENABLED</key>
-	<false></false>
+	<false/>
 	<key>IS_APPINVITE_ENABLED</key>
-	<true></true>
+	<true/>
 	<key>IS_GCM_ENABLED</key>
-	<true></true>
+	<true/>
 	<key>IS_SIGNIN_ENABLED</key>
-	<true></true>
+	<true/>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:139491332086:ios:d3b101e2722983c9a6c1d7</string>
+	<string>1:121579951720:ios:d3b101e2722983c9a6c1d7</string>
 </dict>
 </plist>

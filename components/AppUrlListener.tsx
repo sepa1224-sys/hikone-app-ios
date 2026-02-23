@@ -1,39 +1,47 @@
- 'use client'
+'use client'
 import { supabase } from '@/lib/supabase'
 import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
  
  export default function AppUrlListener() {
-  useEffect(() => {
-    try {
-      const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
-      const hash = new URLSearchParams(typeof window !== 'undefined' ? (window.location.hash || '').replace(/^#/, '') : '')
-      const code = params.get('code')
-      const accessToken = hash.get('access_token')
-      const refreshToken = hash.get('refresh_token')
-      ;(async () => {
-        if (accessToken && refreshToken) {
-          const { data, error } = await (supabase.auth.setSession({ access_token: accessToken!, refresh_token: refreshToken! }) as any)
-          if (!error) {
-            try { window.localStorage.setItem('sb-auth-token', JSON.stringify(data?.session)) } catch {}
-            try { window.location.replace('/profile') } catch {}
-            setTimeout(() => { try { window.location.reload() } catch {} }, 250)
-          } else {
-            try { window.alert('Auth Error: ' + error.message) } catch {}
-          }
-        } else if (code) {
-          const { data, error } = await (supabase.auth.exchangeCodeForSession(code) as any)
-          if (!error) {
-            try { window.localStorage.setItem('sb-auth-token', JSON.stringify(data?.session)) } catch {}
-            try { window.location.replace('/profile') } catch {}
-            setTimeout(() => { try { window.location.reload() } catch {} }, 250)
-          } else {
-            try { window.alert('Auth Error: ' + error.message) } catch {}
-          }
-        }
-      })()
-    } catch {}
-  }, [])
-   return null
+ const router = useRouter()
+ useEffect(() => {
+   let mounted = true
+   try {
+     try { console.log('Initial URL:', typeof window !== 'undefined' ? window.location.href : '') } catch {}
+     const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
+     const hash = new URLSearchParams(typeof window !== 'undefined' ? (window.location.hash || '').replace(/^#/, '') : '')
+     const code = params.get('code')
+     const accessToken = hash.get('access_token')
+     const refreshToken = hash.get('refresh_token')
+    if (!code && !accessToken) {
+      return () => { mounted = false }
+    }
+     ;(async () => {
+       if (code) {
+         const { data, error } = await (supabase.auth.exchangeCodeForSession(code) as any)
+         if (!error) {
+           try { const cap: any = (globalThis as any).Capacitor; const browser = cap?.Browser; if (browser?.close) await browser.close() } catch {}
+           try { window.localStorage.setItem('sb-auth-token', JSON.stringify(data?.session)) } catch {}
+           if (mounted) { try { router.push('/profile') } catch {} }
+         } else {
+           try { console.log('Auth Error:', error.message) } catch {}
+         }
+       } else if (accessToken) {
+         const { data, error } = await (supabase.auth.setSession({ access_token: accessToken!, refresh_token: (refreshToken || '')! }) as any)
+         if (!error) {
+           try { const cap: any = (globalThis as any).Capacitor; const browser = cap?.Browser; if (browser?.close) await browser.close() } catch {}
+           try { window.localStorage.setItem('sb-auth-token', JSON.stringify(data?.session)) } catch {}
+           if (mounted) { try { router.push('/profile') } catch {} }
+         } else {
+           try { console.log('Auth Error:', error.message) } catch {}
+         }
+       }
+     })()
+   } catch {}
+   return () => { mounted = false }
+ }, [])
+ return null
  }
 
 let __appUrlListenerInitialized = false
@@ -44,9 +52,10 @@ try {
     __appUrlListenerInitialized = true
     let handled = false
     appPlugin.addListener('appUrlOpen', async (data: any) => {
-      try { window.alert('DeepLink Received: ' + (data?.url || '')) } catch {}
+      try { console.log('DeepLink Received:', data?.url || '') } catch {}
       const raw = typeof data?.url === 'string' ? data.url : ''
       if (!raw) return
+      ;(globalThis as any).__sb_auth_lock = true
       let code: string | null = null
       let accessToken: string | null = null
       let refreshToken: string | null = null
@@ -85,6 +94,43 @@ try {
       } catch {}
 
       if (handled) return
+      if (!code && !accessToken && !idToken) {
+        ;(globalThis as any).__sb_auth_lock = false
+        return
+      }
+      if (code) {
+        handled = true
+        try {
+          const { data, error } = await (supabase.auth.exchangeCodeForSession(code) as any)
+          if (error) {
+            try { console.log('Auth Error:', error.message) } catch {}
+          } else {
+            try { const cap: any = (globalThis as any).Capacitor; const browser = cap?.Browser; if (browser?.close) await browser.close() } catch {}
+            try { console.log('📦 受け取ったセッション:', JSON.stringify(data?.session)) } catch {}
+            try { window.localStorage.setItem('sb-auth-token', JSON.stringify(data?.session)) } catch {}
+          }
+        } catch (e: any) {
+          try { console.log('Auth Error:', e?.message || 'Unknown') } catch {}
+        }
+        ;(globalThis as any).__sb_auth_lock = false
+        return
+      }
+      if (accessToken) {
+        handled = true
+        try {
+          const { data, error } = await supabase.auth.setSession({ access_token: accessToken!, refresh_token: (refreshToken || '')! }) as any
+          if (error) {
+            try { console.log('Auth Error:', error.message) } catch {}
+          } else {
+            try { const cap: any = (globalThis as any).Capacitor; const browser = cap?.Browser; if (browser?.close) await browser.close() } catch {}
+            try { window.localStorage.setItem('sb-auth-token', JSON.stringify(data?.session)) } catch {}
+          }
+        } catch (e: any) {
+          try { console.log('Auth Error:', e?.message || 'Unknown') } catch {}
+        }
+        ;(globalThis as any).__sb_auth_lock = false
+        return
+      }
       if (idToken) {
         handled = true
         try {
@@ -93,53 +139,18 @@ try {
             token: idToken!
           }) as any)
           if (error) {
-            try { window.alert('Auth Error: ' + error.message) } catch {}
+            try { console.log('Auth Error:', error.message) } catch {}
           } else {
+            try { const cap: any = (globalThis as any).Capacitor; const browser = cap?.Browser; if (browser?.close) await browser.close() } catch {}
             try { window.localStorage.setItem('sb-auth-token', JSON.stringify(data?.session)) } catch {}
-            try { window.location.replace('/profile') } catch {}
-            setTimeout(() => { try { window.location.reload() } catch {} }, 250)
           }
         } catch (e: any) {
-          try { window.alert('Auth Error: ' + (e?.message || 'Unknown')) } catch {}
+          try { console.log('Auth Error:', e?.message || 'Unknown') } catch {}
         }
+        ;(globalThis as any).__sb_auth_lock = false
         return
       }
-      if (accessToken && refreshToken) {
-        handled = true
-        try { 
-          const { data, error } = await supabase.auth.setSession({ access_token: accessToken!, refresh_token: refreshToken! }) as any
-          if (error) {
-            try { window.alert('Auth Error: ' + error.message) } catch {}
-          } else {
-            try { window.localStorage.setItem('sb-auth-token', JSON.stringify(data?.session)) } catch {}
-            try { window.location.replace('/profile') } catch {}
-            setTimeout(() => { try { window.location.reload() } catch {} }, 250)
-          }
-        } catch (e: any) {
-          try { window.alert('Auth Error: ' + (e?.message || 'Unknown')) } catch {}
-        }
-        return
-      }
-
-      if (code) {
-        handled = true
-        try { console.log('🚀 Supabaseに鍵を渡してセッションを要求中...') } catch {}
-        try {
-          const { data, error } = await (supabase.auth.exchangeCodeForSession(code) as any)
-          if (error) {
-            try { console.error('❌ 拒否された理由:', error.message) } catch {}
-            try { window.alert('Auth Error: ' + error.message) } catch {}
-          } else {
-            try { console.log('📦 受け取ったセッション:', JSON.stringify(data?.session)) } catch {}
-            try { window.localStorage.setItem('sb-auth-token', JSON.stringify(data?.session)) } catch {}
-            try { window.location.replace('/profile') } catch {}
-            setTimeout(() => { try { window.location.reload() } catch {} }, 250)
-          }
-        } catch (e: any) {
-          try { window.alert('Auth Error: ' + (e?.message || 'Unknown')) } catch {}
-        }
-        return
-      }
+      ;(globalThis as any).__sb_auth_lock = false
     })
   }
 } catch {}
