@@ -821,7 +821,24 @@ export default function ProfileRegistrationModal({
                 </select>
               </div>
               
-              {/* Step 2: 地方区分選択（滋賀県の場合のみ表示） */}
+              {/* Step 2: 市区町村選択（都道府県が選択されている場合のみ表示） */}
+              {formData.prefecture && formData.prefecture !== '海外' && availableCities.length > 0 && (
+                <div className="relative">
+                  <MapPin className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300" size={20} />
+                  <select
+                    value={formData.city}
+                    onChange={(e) => setFormData({ ...formData, city: e.target.value, selected_area: '', detail_area: '' })}
+                    className="w-full bg-white border-2 border-gray-200 rounded-[1.5rem] py-4 pl-14 pr-5 font-bold text-black focus:border-orange-400 focus:bg-white focus:outline-none transition-all text-sm appearance-none"
+                  >
+                    <option value="">② 市区町村を選択</option>
+                    {availableCities?.map((city) => (
+                      <option key={city} value={city}>{city}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Step 3: 地方区分選択（滋賀県のみ・任意フィルター） */}
               {formData.prefecture === '滋賀県' && (
                 <div className="relative">
                   <MapPin className="absolute left-5 top-1/2 -translate-y-1/2 text-emerald-500" size={20} />
@@ -830,32 +847,12 @@ export default function ProfileRegistrationModal({
                     onChange={(e) => setFormData({ ...formData, region: e.target.value, city: '', selected_area: '', detail_area: '' })}
                     className="w-full bg-emerald-50 border-2 border-emerald-200 rounded-[1.5rem] py-4 pl-14 pr-5 font-bold text-black focus:border-emerald-400 focus:bg-white focus:outline-none transition-all text-sm appearance-none"
                   >
-                    <option value="">② 地方区分を選択</option>
+                    <option value="">③ 地方区分で絞り込む（任意）</option>
                     {SHIGA_REGIONS.map((region) => (
                       <option key={region} value={region}>{region}</option>
                     ))}
                   </select>
                 </div>
-              )}
-              
-              {/* Step 3: 市区町村選択（都道府県が選択されている場合のみ表示） */}
-              {formData.prefecture && formData.prefecture !== '海外' && (
-                // 滋賀県の場合は地方区分選択後に表示、それ以外は都道府県選択後に表示
-                (formData.prefecture !== '滋賀県' || formData.region) && availableCities.length > 0 && (
-                  <div className="relative">
-                    <MapPin className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300" size={20} />
-                    <select
-                      value={formData.city}
-                      onChange={(e) => setFormData({ ...formData, city: e.target.value, selected_area: '', detail_area: '' })}
-                      className="w-full bg-white border-2 border-gray-200 rounded-[1.5rem] py-4 pl-14 pr-5 font-bold text-black focus:border-orange-400 focus:bg-white focus:outline-none transition-all text-sm appearance-none"
-                    >
-                      <option value="">{formData.prefecture === '滋賀県' ? '③' : '②'} 市区町村を選択</option>
-                      {availableCities?.map((city) => (
-                        <option key={city} value={city}>{city}</option>
-                      ))}
-                    </select>
-                  </div>
-                )
               )}
               
               {/* Step 4: 詳細エリア選択（彦根市などの場合表示） */}
@@ -868,7 +865,7 @@ export default function ProfileRegistrationModal({
                       onChange={(e) => setFormData({ ...formData, selected_area: e.target.value })}
                       className="w-full bg-blue-50 border-2 border-blue-200 rounded-[1.5rem] py-4 pl-14 pr-5 font-bold text-black focus:border-blue-400 focus:bg-white focus:outline-none transition-all text-sm appearance-none"
                     >
-                      <option value="">{formData.prefecture === '滋賀県' ? '④' : '③'} お住まいのエリアを選択</option>
+                      <option value="">④ お住まいのエリアを選択</option>
                       {availableDetailAreas?.map((area) => (
                         <option key={area} value={area}>{area}</option>
                       ))}
@@ -890,7 +887,7 @@ export default function ProfileRegistrationModal({
                     type="text"
                     value={formData.detail_area}
                     onChange={(e) => setFormData({ ...formData, detail_area: e.target.value })}
-                    placeholder={`${formData.prefecture === '滋賀県' ? '④' : '③'} 詳細エリア（任意）例：城南、高宮など`}
+                    placeholder="③ 詳細エリア（任意）例：城南、高宮など"
                     className="w-full bg-white border-2 border-gray-200 rounded-[1.5rem] py-4 pl-14 pr-5 font-bold text-black placeholder:text-gray-400 focus:border-orange-400 focus:bg-white focus:outline-none transition-all text-sm"
                   />
                 </div>

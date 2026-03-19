@@ -13,7 +13,20 @@ CREATE TABLE IF NOT EXISTS stamp_cards (
 );
 
 -- RLS for stamp_cards (Already added in previous migration but ensuring here for completeness/idempotency)
-ALTER TABLE stamp_cards ENABLE ROW LEVEL SECURITY;
+ALTER TABLE (lldb) warning: libobjc.A.dylib is being read from process memory. This indicates that LLDB could not find the on-disk shared cache for this device. This will likely reduce debugging performance.
+The Dart VM Service was not discovered after 30 seconds. This is taking much
+longer than expected...
+process interrupt
+error: Failed to halt process: Halt timed out. State = running
+* thread #1, stop reason = signal SIGKILL
+    frame #0: 0x00000001cc4c51f0 dyld`lldb_image_notifier
+dyld`lldb_image_notifier:
+->  0x1cc4c51f0 <+0>:  stp    x22, x21, [sp, #-0x30]!
+    0x1cc4c51f4 <+4>:  stp    x20, x19, [sp, #0x10]
+    0x1cc4c51f8 <+8>:  stp    x29, x30, [sp, #0x20]
+    0x1cc4c51fc <+12>: add    x29, sp, #0x20
+Target 0: (Runner) stopped.
+Installing and launching...                                       128.7stamp_cards ENABLE ROW LEVEL SECURITY;
 
 -- Drop policy if exists to avoid error on recreate
 DROP POLICY IF EXISTS "Owners can manage their own stamp cards" ON stamp_cards;
